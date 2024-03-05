@@ -91,6 +91,9 @@ class MotifClass:
         self.matchings = {}
         self.replace_regex = []
         self.motif_dictionary = {}
+        self.motif_end_pos = None
+        self.motif_start_pos = None
+        self.m_color = None
     
     def get_motifs(self, motif_file):
         with open(motif_file, 'r') as motifs_file:
@@ -117,16 +120,64 @@ class MotifClass:
    
     def find_motifs2(self, sequence):
         sequence = sequence.upper()
-        #print(sequence)
         for pattern in range(len(self.regex_list)):
-            #print(pattern)
-            for match in re.finditer("(?=(" + self.regex_list[pattern] + "))", sequence):
-            #for match in re.finditer(self.regex_list[pattern], sequence):
-                #print(match.end(1))
+            print(f'Debug 752 {pattern=}, {self.regex_list[pattern]}')
+            #for match in re.finditer("(?=(" + self.regex_list[pattern] + "))", sequence):
+            for match in re.finditer("(?=" + self.regex_list[pattern] + ")", sequence):
+                print(f'Debug 752 {match=}, {match.groups()=}, {match.start()=}, {match.end()=}')
+                if len(match.groups())==0:
+                    continue
+                #getting the end positon
+                
                 self.motif_dictionary[(self.motifs[pattern], match.group(1))] = (match.start(1), match.end(1), self.color_pallette[pattern])
+        print(f'Debug 752 {self.motif_dictionary=}')
         return self.motif_dictionary
+    
+    def find_motifs3(self, sequence,ctx,vertical_pos):
+        sequence = sequence.upper()
+        for pattern in range(len(self.regex_list)):
+            #print(f'Debug 752 {pattern=}, {self.regex_list[pattern]}')
+            #for match in re.finditer(self.regex_list[pattern], sequence):
+            for match in re.finditer("(?=" + self.regex_list[pattern] + ")", sequence):
+                print(f'Debug 752 {match=}, {match.groups()=}, {match.start()=}, {match.end()=}')
+                #getting the end positon
+                #print(f'match groups: {match.groups()}')
+                end_position = len(self.motifs[pattern])+match.end()
+                #print(f'Debug pos: {match.start()=}, {end_position=}')
+                for position in range(match.start(), end_position):
+                    ctx.set_source_rgb(*self.color_pallette[pattern])
+                    ctx.rectangle(position+30, vertical_pos,2,30)
+                    ctx.fill()
+                # eg key = YGCY, Value  = (start_position(10), end_position(14), color_coord(0,0,1))
+                self.motif_dictionary[self.motifs[pattern]] = (match.start(), end_position, self.color_pallette[pattern])
+        print(f'Debug 752 {self.motif_dictionary=}')
+        return self.motif_dictionary
+    
+    def find_motifs4(self, sequence):
+        sequence = sequence.upper()
+        for pattern in range(len(self.regex_list)):
+            for match in re.finditer("(?=" + self.regex_list[pattern] + ")", sequence):
+                print(f'Debug 752 {match=}, {match.groups()=}, {match.start()=}, {match.end()=}')
+                self.motif_start_pos = match.start()
+                self.motif_end_pos = len(self.motifs[pattern])+match.end()
+                self.m_color = self.color_pallette[pattern]
+                self.motif_dictionary[self.motifs[pattern]] = (match.start(), self.motif_end_pos, self.color_pallette[pattern])
+        # print(f'Debug 752 {self.motif_dictionary=}')
+        # return self.motif_dictionary
+    
 
-       
+
+
+    # def find_motifs2(self, sequence):
+    #     sequence = sequence.upper()
+    #     for pattern, regex, color in zip(self.motifs, self.regex_list, self.color_pallette):
+    #         for match in re.finditer(regex, sequence):
+    #             self.motif_dictionary[(pattern, match.group(0))] = (
+    #                 match.start(), match.end(), color
+    #             )
+    #     print(self.motif_dictionary)
+    #     return self.motif_dictionary
+   
 
 class Draw:
     def __init__(self):
@@ -164,6 +215,14 @@ class Draw:
                 ctx.set_source_rgb(*value[2])
                 ctx.rectangle(position+30, vertical_pos,2,30)
                 ctx.fill()
+    
+    def draw_motif2(self, MotifClass,ctx,vertical_pos):
+       
+        for position in range(MotifClass.motif_start_pos, MotifClass.motif_end_pos):
+            ctx.set_source_rgb(*MotifClass.m_color)
+            ctx.rectangle(position+30, vertical_pos,2,30)
+            ctx.fill()
+
 
     
     def draw_text(self, gene_header,ctx):
@@ -224,14 +283,16 @@ def main():
         intron_length = intron.get_intron_length(value)
 
 
-        motifs.find_motifs2(value)
+        motifs.find_motifs3(value,ctx,vertical_pos)
+        motifs.find_motifs4(value)
         gene_header = gene.get_name(key)
 
 
         draw.draw_text(gene_header,ctx)
         draw.draw_intron(intron, ctx, value, y_coord)
         draw.draw_exon(exon, value,vertical_pos, ctx)
-        draw.draw_motif(motifs,ctx,vertical_pos)
+        #draw.draw_motif(motifs,ctx,vertical_pos)
+        draw.draw_motif2(motifs,ctx,vertical_pos)
         draw.draw_legend(motifs,ctx)
         y_coord += 200
         vertical_pos += 200
