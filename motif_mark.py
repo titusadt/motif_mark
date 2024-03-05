@@ -50,8 +50,6 @@ class Gene:
         self.gene_name = None
 
     def get_name(self, key):
-        #seq_dict = oneline_fasta(fasta_file)
-        #for key in seq_dict:
         key_vals = key.split()
         self.gene_name = key_vals[0][1:]
         return self.gene_name
@@ -62,9 +60,6 @@ class Intron:
         self.intron_length = None
     
     def get_intron_length(self,sequence):
-        #fasta_seq = oneline_fasta(fasta_file)
-        #for key, value in fasta_seq.items():
-        #length = len()
         self.intron_length = len(sequence)
         return self.intron_length
     
@@ -81,8 +76,6 @@ class Exon:
             if sequence[base].isupper():
                 self.exon_pos.append(base)
         return self.exon_pos
-            
-        #return self.intron_length
 
 class MotifClass:
     def __init__(self):
@@ -107,17 +100,6 @@ class MotifClass:
         return self.motifs
     
     def get_regex(self):
-        #print(f'before isupper: {sequence}')
-        #regex_str =''
-        #sequence = motif_sequence.upper()
-        # for motif in self.motifs:
-        #     motif = motif.upper()
-        #     print(motif)
-        #     for base in motif:
-        #         if base in iupac:
-        #             #print('base in iupac: {base}')
-        #             self.regex_str+=iupac[base]
-        # return self.regex_str
         for motif in self.motifs:
             motif = motif.upper()
             replaced_motif = []
@@ -133,45 +115,14 @@ class MotifClass:
         return self.regex_list
     
    
-    
-    def get_replace_regex(self,sequence):
-        #print(f'before isupper: {sequence}')
-        #motif_sequence = self.motifs.upper()
-        sequence = sequence.upper()
-        for base in sequence:
-            if base in iupac:
-                self.replace_regex.append(iupac[base])
-            else:
-                self.replace_regex.append(base)
-
-        return ''.join(self.replace_regex)
-    
-    def find_motifs(self, regex_dict, sequence):
-        sequence = sequence.upper()
-        pattern_parts = []
-        new_dict ={}
-        for key, value in regex_dict.items():
-            #print(f'key: {key}')
-            pattern_parts.append(value[0])
-        combined_pattern = '|'.join(pattern_parts)
-        #print(combined_pattern)
-        for keys, values in regex_dict.items():
-            matched = re.findall(values[0], sequence)
-            if not matched:
-                pass
-            else:
-                #print(matched)
-                new_dict[(keys, matched.pop())] = values
-        #getting the start and the stop position 
-        for match in re.finditer(combined_pattern, sequence):
-            #print(f'match is: {match}')
-            self.match_positions.append((match.group(), match.start(),match.end()))
-        return self.match_positions, new_dict
-
     def find_motifs2(self, sequence):
         sequence = sequence.upper()
+        #print(sequence)
         for pattern in range(len(self.regex_list)):
+            #print(pattern)
             for match in re.finditer("(?=(" + self.regex_list[pattern] + "))", sequence):
+            #for match in re.finditer(self.regex_list[pattern], sequence):
+                #print(match.end(1))
                 self.motif_dictionary[(self.motifs[pattern], match.group(1))] = (match.start(1), match.end(1), self.color_pallette[pattern])
         return self.motif_dictionary
 
@@ -184,6 +135,7 @@ class Draw:
        #self.surface = cairo.ImageSurface(self.WIDTH, self.HEIGHT)
         self.intron_length = None
         self.text_pos = 20
+        self.legend_vert_pos = 200
         
 
     def draw_intron(self, Intron, ctx, sequence, y_coord):
@@ -202,39 +154,17 @@ class Draw:
         for pos in exon_positions:
             ctx.set_source_rgb(*Exon.color)
             #ctx.rectangle(left_pos, vertical_pos, width,length)
-            ctx.rectangle(pos+30,vertical_pos,2,30)        #(x0,y0,x1,y1)
+            ctx.rectangle(pos+30,vertical_pos,2,25)        #(x0,y0,x1,y1)
             ctx.fill()  
             #self.surface.write_to_png (png_file)
     
-    def draw_motif(self, MotifClass, sequence,ctx,vertical_pos):
-        #motif_pos,new_dict = MotifClass.find_motifs(regex_dict, sequence)   
-        #print(new_dict.keys()) 
-        # for coord in motif_pos:
-        #     for position in range(coord[1],coord[2]):
-        #         #print(f'coord0: {coord[0]}')
-        #         if coord[0] in color_dictionary:
-        #             #print(coord[0])
-        #             #ctx.set_source_rgb(144/255,238/255,144/255)
-        #             ctx.set_source_rgb(*(color_dictionary[coord[0]]))
-        #             ctx.rectangle(position+30, vertical_pos, 2,30)
-        #             ctx.fill()
+    def draw_motif(self, MotifClass,ctx,vertical_pos):
         for key, value in MotifClass.motif_dictionary.items():
-            #print(value[0])
             for position in range(value[0], value[1]):
                 ctx.set_source_rgb(*value[2])
                 ctx.rectangle(position+30, vertical_pos,2,30)
                 ctx.fill()
 
-    def draw_motif2(self, MotifClass, regex_dict, sequence,ctx,vertical_pos,color_dictionary):
-        motif_pos,new_dict = MotifClass.find_motifs(regex_dict, sequence)   
-        for coord in motif_pos:
-            for position in range(coord[1],coord[2]):
-                for key,value in new_dict.items():
-                    if key[1] == coord[0]:
-                        ctx.set_source_rgb(*value[1])
-                ctx.rectangle(position+30, vertical_pos, 2,30)
-                ctx.fill()
-        
     
     def draw_text(self, gene_header,ctx):
         # Drawing code
@@ -245,6 +175,16 @@ class Draw:
                             cairo.FONT_WEIGHT_NORMAL)
         ctx.move_to(30, self.text_pos)
         ctx.show_text(gene_header)
+
+    def draw_legend(self, MotifClass, ctx):
+        for key, value in MotifClass.motif_dictionary.items():
+            ctx.set_source_rgb(*value[2])
+            #ctx.rectangle(left_pos, vertical_pos, width,length)
+            ctx.rectangle(900, self.legend_vert_pos, 20, 20)
+            ctx.fill()
+            self.legend_vert_pos +=10
+
+            
                  
     
 def main():
@@ -275,51 +215,24 @@ def main():
 
     motifs.get_motifs(motif_file)
     motifs.get_regex()
-    ##################################################################################################
-    #ALL THIS IS REGEX DICTIONARY STUFF
-    ##################################################################################################
-    #looping through the motifs
-    # motif_list = motifs.get_motifs(motif_file)
+
+    # print(motifs.motifs)
+    # print(motifs.regex_list)
    
-    # for entry in range(len(motif_list)):
-    #         #print(motifs.motif_colors[entry])
-    #         regex = motifs.get_regex(motif_list[entry])
-    #         #print(f'regex: {regex}')
-    #         regex_dict[motif_list[entry]] = regex,motifs.color_pallette[entry] #(regex,(1,0.5,1))
-
-    # #print(f'regex dictionary: {regex_dict}')
-
-    # color_dictionary={}
-    # for entry in range(len(motif_list)):
-    #     color_dictionary[motif_list[entry]] = motifs.color_pallette[entry]
-    # print(color_dictionary)
-    ####################################################################################################
-    #print(f'regex_pattern: {motifs.get_regex()}')
-    #print(motifs.regex_list)
 
     for key, value in fasta.items():
         intron_length = intron.get_intron_length(value)
 
-        ####################
-        #testing find_motif2
 
-        motifs.get_replace_regex(value)
         motifs.find_motifs2(value)
-        
-        #motifs.find_motifs2(regex_dict, value)
-
-        #####################
-
         gene_header = gene.get_name(key)
-        # #print(gene_header)
-        # #finding the motifs
-        # motifs.find_motifs(regex_dict,value)
 
 
         draw.draw_text(gene_header,ctx)
         draw.draw_intron(intron, ctx, value, y_coord)
         draw.draw_exon(exon, value,vertical_pos, ctx)
-        draw.draw_motif(motifs, value,ctx,vertical_pos)
+        draw.draw_motif(motifs,ctx,vertical_pos)
+        draw.draw_legend(motifs,ctx)
         y_coord += 200
         vertical_pos += 200
         draw.text_pos +=200
