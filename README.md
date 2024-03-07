@@ -9,5 +9,6 @@ Python script to using object-oriented programming to visualize motifs, introns 
 
 -o - png output filenamr
 
-Commad to run `./motif-mark-oop.py -f fasta_file -o motif_file -o output_png_file
+Commad to run `./motif-mark-oop.py -f fasta_file -o motif_file -o output_png_file`
+
 
